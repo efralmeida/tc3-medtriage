@@ -6,5 +6,7 @@ __pycache__/
 .ruff_cache/
 dist/
 build/
+data/
+models/
 pauta.md
 .github/copilot-instructions.md
