@@ -26,5 +26,17 @@ package-mode = false
 
 [dependency-groups]
 dev = [
-    "ipykernel (>=7.3.0,<8.0.0)"
+    "ipykernel (>=7.3.0,<8.0.0)",
+    "pytest (>=8.4.0,<9.0.0)",
+    "ruff (>=0.12.0,<1.0.0)"
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]

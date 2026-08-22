@@ -47,7 +47,29 @@ Onde batch entra no desenho:
 - scripts/benchmark_api_latency.py: benchmark baseline de latencia
 - Dockerfile: empacotamento da API
 
-## 3) Como Executar Localmente
+## 3) Etapa 2: CI/CD e treinamento orquestrado
+
+O workflow `.github/workflows/ci.yml` executa Ruff e Pytest em todo push e pull
+request. A DAG `dags/medtriage_training.py` possui duas tarefas:
+
+1. `ingest_data`: valida e copia `data/processed/train.csv` para a area de trabalho do Airflow.
+2. `train_and_save`: treina o pipeline TF-IDF + Regressao Logistica e salva o artefato em `models/text_classifier_best.joblib`.
+
+Para validar a qualidade localmente:
+
+```bash
+poetry install --with dev
+poetry run ruff check src tests dags
+poetry run pytest
+```
+
+Em um ambiente Airflow, configure o repositorio como volume de DAGs e execute:
+
+```bash
+airflow dags test medtriage_training 2026-01-01
+```
+
+## 4) Como Executar Localmente
 
 Pre-requisitos:
 - Python 3.12+
@@ -92,7 +114,7 @@ Resposta esperada (exemplo):
 }
 ```
 
-## 4) Docker
+## 5) Docker
 
 Build da imagem:
 
@@ -114,7 +136,7 @@ docker run --rm -p 8000:8000 \
 	medtriage-api:baseline
 ```
 
-## 5) Medicao de Latencia Baseline
+## 6) Medicao de Latencia Baseline
 
 Com a API no ar (local ou Docker), execute:
 
@@ -136,8 +158,10 @@ Interpretacao:
 - `avg_latency_ms` representa a latencia media baseline.
 - `p95_latency_ms` captura cauda de latencia e e um indicador mais robusto para SLO inicial.
 
-## 6) Entregavel da Etapa 1
+## 7) Entregaveis
 
 - API em Docker funcional
 - decisao arquitetural registrada neste README
 - procedimento de benchmark baseline de latencia documentado
+- workflow CI com lint e testes automatizados
+- DAG Airflow com ingestao, treinamento e salvamento do modelo
