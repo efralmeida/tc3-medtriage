@@ -158,10 +158,48 @@ Interpretacao:
 - `avg_latency_ms` representa a latencia media baseline.
 - `p95_latency_ms` captura cauda de latencia e e um indicador mais robusto para SLO inicial.
 
-## 7) Entregaveis
+## 7) Etapa 3: Monitoramento e Observabilidade
+
+A API e instrumentada com `prometheus_client`:
+
+- `medtriage_http_requests_total`: contador de requisicoes por metodo, endpoint e status HTTP.
+- `medtriage_http_request_latency_seconds`: histograma de latencia por metodo e endpoint.
+- `GET /metrics`: expõe as metricas no formato Prometheus.
+
+O stack local sobe API + Prometheus + Grafana via Docker Compose:
+
+```bash
+docker compose up --build
+```
+
+Servicos expostos:
+- API: http://127.0.0.1:8000
+- Prometheus: http://127.0.0.1:9090
+- Grafana: http://127.0.0.1:3000 (usuario `admin`, senha `admin`)
+
+O dashboard `MedTriage - API Overview` e provisionado automaticamente em
+`monitoring/grafana/dashboards/medtriage_overview.json` e contem:
+- total de requisicoes
+- latencia media e p95
+- taxa de erro (%)
+- requisicoes por endpoint
+
+Para gerar trafego de teste, use o benchmark da secao 6 apontando para
+`http://127.0.0.1:8000`.
+
+Para derrubar o stack:
+
+```bash
+docker compose down
+```
+
+## 8) Entregaveis
 
 - API em Docker funcional
 - decisao arquitetural registrada neste README
 - procedimento de benchmark baseline de latencia documentado
 - workflow CI com lint e testes automatizados
 - DAG Airflow com ingestao, treinamento e salvamento do modelo
+- instrumentacao Prometheus na API e stack Docker Compose (API + Prometheus + Grafana)
+- dashboard Grafana com >= 3 paineis provisionado automaticamente
+

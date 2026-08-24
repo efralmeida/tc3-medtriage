@@ -16,7 +16,8 @@ RUN pip install \
 	scikit-learn \
 	pandas \
 	matplotlib \
-	joblib
+	joblib \
+	prometheus-client
 
 ENV PYTHONPATH=/app/src
 
