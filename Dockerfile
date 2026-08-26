@@ -17,7 +17,11 @@ RUN pip install \
 	pandas \
 	matplotlib \
 	joblib \
-	prometheus-client
+	prometheus-client \
+	numpy \
+	onnx \
+	onnxruntime \
+	skl2onnx
 
 ENV PYTHONPATH=/app/src
 

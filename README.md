@@ -193,7 +193,45 @@ Para derrubar o stack:
 docker compose down
 ```
 
-## 8) Entregaveis
+## 8) Etapa 4: Otimizacao com ONNX Runtime
+
+O pipeline `TF-IDF + LogisticRegression` e exportado para ONNX e executado com
+ONNX Runtime em CPU. O comando abaixo mede `avg`, `p50` e `p95` apos warm-up e
+grava o comparativo em `models/model_latency_comparison.csv`. Se o CSV informado
+tiver a coluna `urgency`, o comando tambem registra a acuracia de cada backend:
+
+O exportador preserva a normalizacao de acentos do modelo Joblib antes de envia-la
+ao ONNX, pois `skl2onnx` nao converte `strip_accents="unicode"` diretamente.
+
+PowerShell:
+
+```powershell
+$env:PYTHONPATH = "src"
+poetry run python scripts/optimize_model.py --iterations 200
+```
+
+Linux/macOS:
+
+```bash
+PYTHONPATH=src poetry run python scripts/optimize_model.py --iterations 200
+```
+
+Arquivos gerados:
+- `models/text_classifier_best.onnx`: artefato otimizado.
+- `models/model_latency_comparison.csv`: acuracia e latencias do Joblib e ONNX Runtime.
+
+Para executar a API com o modelo otimizado fora do Compose:
+
+```bash
+MODEL_PATH=models/text_classifier_best.onnx PYTHONPATH=src \
+poetry run uvicorn medtriage.main:app --host 0.0.0.0 --port 8000
+```
+
+O Compose ja aponta para `text_classifier_best.onnx`; gere o artefato antes de
+executar `docker compose up --build`. O fallback Joblib continua disponivel
+quando `MODEL_PATH` aponta para `text_classifier_best.joblib`.
+
+## 9) Entregaveis
 
 - API em Docker funcional
 - decisao arquitetural registrada neste README
@@ -202,4 +240,5 @@ docker compose down
 - DAG Airflow com ingestao, treinamento e salvamento do modelo
 - instrumentacao Prometheus na API e stack Docker Compose (API + Prometheus + Grafana)
 - dashboard Grafana com >= 3 paineis provisionado automaticamente
+- modelo ONNX Runtime, validacao de equivalencia e comparativo de latencia
 

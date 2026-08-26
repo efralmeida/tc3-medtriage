@@ -7,8 +7,11 @@ from math import exp
 from pathlib import Path
 from time import perf_counter
 from typing import Any
+import unicodedata
 
 import joblib
+import numpy as np
+import onnxruntime as ort
 
 
 def _softmax_confidence(scores: list[float]) -> float:
@@ -57,5 +60,39 @@ class ModelServiceFactory:
     @staticmethod
     def create(model_path: Path) -> ModelService:
         """Carrega o artefato serializado e retorna o servico pronto."""
+        if model_path.suffix.lower() == ".onnx":
+            return ModelService(model=OnnxModelAdapter(model_path))
+
         model = joblib.load(model_path)
         return ModelService(model=model)
+
+
+class OnnxModelAdapter:
+    """Adapta um classificador ONNX para a interface do ModelService."""
+
+    def __init__(self, model_path: Path) -> None:
+        self.session = ort.InferenceSession(
+            str(model_path), providers=["CPUExecutionProvider"]
+        )
+        self.input_name = self.session.get_inputs()[0].name
+
+    def _run(self, text: str) -> list[np.ndarray]:
+        """Executa inferencia para um unico texto."""
+        normalized_text = "".join(
+            character
+            for character in unicodedata.normalize("NFKD", text)
+            if not unicodedata.combining(character)
+        )
+        inputs = {self.input_name: np.asarray([[normalized_text]], dtype=object)}
+        return self.session.run(None, inputs)
+
+    def predict(self, texts: list[str]) -> np.ndarray:
+        """Retorna a classe prevista pelo modelo ONNX."""
+        labels = [self._run(text)[0].reshape(-1)[0] for text in texts]
+        return np.asarray(
+            [label.decode("utf-8") if isinstance(label, bytes) else label for label in labels]
+        )
+
+    def predict_proba(self, texts: list[str]) -> np.ndarray:
+        """Retorna probabilidades previstas pelo modelo ONNX."""
+        return np.asarray([self._run(text)[1].reshape(-1) for text in texts])
