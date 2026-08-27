@@ -16,10 +16,10 @@ jobs:
           python-version: "3.12"
       - name: Install Poetry
         run: pipx install poetry
-      - name: Refresh lock file
-        run: poetry lock
+      - name: Validate lock file
+        run: poetry check --lock
       - name: Install dependencies
-        run: poetry install --with dev
+        run: poetry install --with dev --sync --no-interaction
       - name: Lint
         run: poetry run ruff check src tests dags
       - name: Tests

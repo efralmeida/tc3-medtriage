@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+import unicodedata
 from dataclasses import dataclass
 from math import exp
 from pathlib import Path
 from time import perf_counter
 from typing import Any
-import unicodedata
 
 import joblib
 import numpy as np
@@ -90,7 +90,10 @@ class OnnxModelAdapter:
         """Retorna a classe prevista pelo modelo ONNX."""
         labels = [self._run(text)[0].reshape(-1)[0] for text in texts]
         return np.asarray(
-            [label.decode("utf-8") if isinstance(label, bytes) else label for label in labels]
+            [
+                label.decode("utf-8") if isinstance(label, bytes) else label
+                for label in labels
+            ]
         )
 
     def predict_proba(self, texts: list[str]) -> np.ndarray:

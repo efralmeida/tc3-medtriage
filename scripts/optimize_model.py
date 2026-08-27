@@ -72,6 +72,21 @@ def _accuracy(service: ModelService, texts: list[str], targets: list[str]) -> fl
     ) / len(targets)
 
 
+def _prediction_agreement(
+    first_service: ModelService, second_service: ModelService, texts: list[str]
+) -> float:
+    """Calcula a concordancia entre dois backends sem exigir rotulos."""
+    first_predictions = [
+        str(first_service.predict(text)["urgency"]) for text in texts
+    ]
+    second_predictions = [
+        str(second_service.predict(text)["urgency"]) for text in texts
+    ]
+    return sum(
+        first == second for first, second in zip(first_predictions, second_predictions)
+    ) / len(texts)
+
+
 def _write_report(report_path: Path, rows: list[dict[str, Any]]) -> None:
     """Salva os resultados para uso na documentacao e auditoria."""
     report_path.parent.mkdir(parents=True, exist_ok=True)
@@ -106,12 +121,17 @@ def main() -> None:
         "onnxruntime": ModelServiceFactory.create(args.onnx),
     }
     rows = []
-    for name, service in services.items():
+    services_list = list(services.items())
+    agreement = _prediction_agreement(
+        services_list[0][1], services_list[1][1], texts
+    )
+    for name, service in services_list:
         metrics = _measure(service, texts, args.iterations)
         rows.append(
             {
                 "backend": name,
                 "accuracy": _accuracy(service, texts, targets) if targets else "n/a",
+                "prediction_agreement": agreement,
                 **metrics,
             }
         )

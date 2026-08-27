@@ -203,6 +203,27 @@ tiver a coluna `urgency`, o comando tambem registra a acuracia de cada backend:
 O exportador preserva a normalizacao de acentos do modelo Joblib antes de envia-la
 ao ONNX, pois `skl2onnx` nao converte `strip_accents="unicode"` diretamente.
 
+O arquivo `data/raw/test.dat` e um conjunto de inferencia sem rotulos: ele
+comeca diretamente com o texto, ao contrario de `train.dat`, que possui o
+codigo numerico da classe no inicio de cada linha. Por isso, a acuracia no
+comparativo e `n/a` para esse arquivo. O benchmark registra
+`prediction_agreement`, que mede a concordancia entre Joblib e ONNX e valida a
+equivalencia das predicoes sem inventar rotulos.
+
+Para obter uma acuracia com ground truth, gere uma validacao estratificada a
+partir do conjunto rotulado de treino:
+
+```powershell
+$env:PYTHONPATH = "src"
+poetry run python scripts/create_validation_split.py
+```
+
+O comando gera `data/processed/train_split.csv` e
+`data/processed/validation.csv` usando `random_state=42`. O modelo usado na
+avaliacao deve ser treinado com `train_split.csv`, e o benchmark deve receber
+`--test-data data/processed/validation.csv`. O `data/processed/test.csv`
+continua reservado para inferencia sem rotulos.
+
 PowerShell:
 
 ```powershell
@@ -218,7 +239,8 @@ PYTHONPATH=src poetry run python scripts/optimize_model.py --iterations 200
 
 Arquivos gerados:
 - `models/text_classifier_best.onnx`: artefato otimizado.
-- `models/model_latency_comparison.csv`: acuracia e latencias do Joblib e ONNX Runtime.
+- `models/model_latency_comparison.csv`: acuracia, concordancia entre backends e
+	latencias do Joblib e ONNX Runtime.
 
 Para executar a API com o modelo otimizado fora do Compose:
 
@@ -230,6 +252,10 @@ poetry run uvicorn medtriage.main:app --host 0.0.0.0 --port 8000
 O Compose ja aponta para `text_classifier_best.onnx`; gere o artefato antes de
 executar `docker compose up --build`. O fallback Joblib continua disponivel
 quando `MODEL_PATH` aponta para `text_classifier_best.joblib`.
+
+O servico da API possui um healthcheck no Compose que executa uma requisicao
+real em `/predict`. Assim, Prometheus so inicia depois que o modelo ONNX foi
+carregado e respondeu com sucesso a uma inferencia.
 
 ## 9) Entregaveis
 
