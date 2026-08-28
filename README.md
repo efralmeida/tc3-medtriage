@@ -1,11 +1,11 @@
 # tc3-medtriage
 
-API de triagem automatica de laudos medicos para classificar urgencia em 3 classes:
+API de triagem automatica de laudos medicos para classificar urgência em 3 classes:
 - normal
-- atencao
+- atenção
 - urgente
 
-Este repositorio atende a Etapa 1 do Tech Challenge (FIAP ML Engineering):
+Este repositório atende a Etapa 1 do Tech Challenge (FIAP ML Engineering):
 - decisao arquitetural documentada
 - API FastAPI funcional para inferencia
 - empacotamento em Docker
@@ -19,7 +19,7 @@ AWS.
 ### Estrategia de deploy
 - API de inferencia em tempo real com FastAPI (deploy em ECS Fargate ou EKS).
 - Artefato do modelo armazenado em objeto versionado (S3).
-- Pipeline de treino separado da inferencia (Airflow na etapa 2).
+- Pipeline de treino separado da inferencia (Airflow).
 
 ### Justificativa Batch vs Real-Time
 Escolha principal: real-time.
@@ -38,7 +38,7 @@ Onde batch entra no desenho:
 - geracao de relatorios gerenciais
 - reprocessamento historico
 
-## 2) Estrutura da Etapa 1
+## 2) API FastAPI, empacotamento Docker, medição latência
 
 - src/medtriage/main.py: entrada da API
 - src/medtriage/app_factory.py: Factory da aplicacao (design pattern)
@@ -47,7 +47,7 @@ Onde batch entra no desenho:
 - scripts/benchmark_api_latency.py: benchmark baseline de latencia
 - Dockerfile: empacotamento da API
 
-## 3) Etapa 2: CI/CD e treinamento orquestrado
+## 3) CI/CD e treinamento orquestrado
 
 O workflow `.github/workflows/ci.yml` executa Ruff e Pytest em todo push e pull
 request. A DAG `dags/medtriage_training.py` possui duas tarefas:
@@ -63,10 +63,28 @@ poetry run ruff check src tests dags
 poetry run pytest
 ```
 
-Em um ambiente Airflow, configure o repositorio como volume de DAGs e execute:
+O Airflow pode ser iniciado junto com o stack Docker. Ele usa PostgreSQL para os
+metadados, um webserver para a interface e um scheduler para executar as DAGs:
 
-```bash
-airflow dags test medtriage_training 2026-01-01
+```powershell
+docker compose up --build airflow-init airflow-webserver airflow-scheduler postgres
+```
+
+Acesse `http://127.0.0.1:8080` e entre com `admin` / `admin`. A DAG
+`medtriage_training` aparecera na interface. Ative-a e use **Trigger DAG** para
+executar manualmente. Os diretorios `dags/`, `data/` e `models/` sao montados no
+container, permitindo que as tasks leiam o dataset e salvem o modelo no projeto.
+
+Para testar a DAG sem abrir a interface:
+
+```powershell
+docker compose run --rm airflow-scheduler airflow dags test medtriage_training 2026-01-01
+```
+
+O comando abaixo encerra os servicos, preservando o banco de metadados no volume:
+
+```powershell
+docker compose down
 ```
 
 ## 4) Como Executar Localmente
@@ -158,7 +176,7 @@ Interpretacao:
 - `avg_latency_ms` representa a latencia media baseline.
 - `p95_latency_ms` captura cauda de latencia e e um indicador mais robusto para SLO inicial.
 
-## 7) Etapa 3: Monitoramento e Observabilidade
+## 7) Monitoramento e Observabilidade
 
 A API e instrumentada com `prometheus_client`:
 
@@ -187,13 +205,13 @@ O dashboard `MedTriage - API Overview` e provisionado automaticamente em
 Para gerar trafego de teste, use o benchmark da secao 6 apontando para
 `http://127.0.0.1:8000`.
 
-Para derrubar o stack:
+Para derrubar todo o stack:
 
 ```bash
 docker compose down
 ```
 
-## 8) Etapa 4: Otimizacao com ONNX Runtime
+## 8) Otimizacao com ONNX Runtime
 
 O pipeline `TF-IDF + LogisticRegression` e exportado para ONNX e executado com
 ONNX Runtime em CPU. O comando abaixo mede `avg`, `p50` e `p95` apos warm-up e
@@ -257,7 +275,7 @@ O servico da API possui um healthcheck no Compose que executa uma requisicao
 real em `/predict`. Assim, Prometheus so inicia depois que o modelo ONNX foi
 carregado e respondeu com sucesso a uma inferencia.
 
-## 9) Entregaveis
+## 9) Entregáveis
 
 - API em Docker funcional
 - decisao arquitetural registrada neste README
