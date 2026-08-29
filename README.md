@@ -11,7 +11,7 @@ Este repositório atende a Etapa 1 do Tech Challenge (FIAP ML Engineering):
 - empacotamento em Docker
 - medicao de latencia baseline
 
-## 1) Decisao Arquitetural (Nuvem + Batch vs Real-Time)
+## 1) Decisão Arquitetural (Nuvem + Batch vs Real-Time)
 
 ### Provedor escolhido
 AWS.
@@ -24,27 +24,27 @@ AWS.
 ### Justificativa Batch vs Real-Time
 Escolha principal: real-time.
 
-Motivos de negocio:
+Motivos de negócio:
 - triagem hospitalar exige resposta imediata por paciente
-- suporte a decisao clinica no momento da entrada
-- reduz fila manual de priorizacao
+- suporte a decisão clínica no momento da entrada
+- reduz fila manual de priorização
 
-Motivos tecnicos:
+Motivos técnicos:
 - modelo linear com TF-IDF tem inferencia rapida
 - API stateless simplifica escalabilidade horizontal
 
 Onde batch entra no desenho:
 - retreino agendado
-- geracao de relatorios gerenciais
-- reprocessamento historico
+- geração de relatórios gerenciais
+- reprocessamento histórico
 
-## 2) API FastAPI, empacotamento Docker, medição latência
+## 2) API FastAPI, empacotamento Docker, medição de latência
 
 - src/medtriage/main.py: entrada da API
 - src/medtriage/app_factory.py: Factory da aplicacao (design pattern)
-- src/medtriage/model_service.py: camada de inferencia e confianca
+- src/medtriage/model_service.py: camada de inferência e confiança
 - src/medtriage/schemas.py: contratos da API
-- scripts/benchmark_api_latency.py: benchmark baseline de latencia
+- scripts/benchmark_api_latency.py: benchmark baseline de latência
 - Dockerfile: empacotamento da API
 
 ## 3) CI/CD e treinamento orquestrado
