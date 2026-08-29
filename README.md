@@ -122,13 +122,14 @@ curl -X POST http://127.0.0.1:8000/predict \
 	-d "{\"text\":\"Paciente com dor toracica intensa e dispneia subita\"}"
 ```
 
-Resposta esperada (exemplo):
+Resposta ilustrativa (a classe, a confianca e a latencia variam conforme o
+modelo carregado e o ambiente de execucao):
 
 ```json
 {
-	"urgency": "urgente",
-	"confidence": 0.74,
-	"latency_ms": 7.91
+	"urgency": "<classe prevista>",
+	"confidence": 0.0,
+	"latency_ms": 0.0
 }
 ```
 
@@ -154,7 +155,7 @@ docker run --rm -p 8000:8000 \
 	medtriage-api:baseline
 ```
 
-## 6) Medicao de Latencia Baseline
+## 6) Medição de Latência Baseline
 
 Com a API no ar (local ou Docker), execute:
 
@@ -173,18 +174,19 @@ p95_latency_ms=...
 ```
 
 Interpretacao:
-- `avg_latency_ms` representa a latencia media baseline.
-- `p95_latency_ms` captura cauda de latencia e e um indicador mais robusto para SLO inicial.
+- `avg_latency_ms` representa a latencia média baseline.
+- `p95_latency_ms` captura cauda de latência e e um indicador mais robusto para SLO inicial.
 
 ## 7) Monitoramento e Observabilidade
 
-A API e instrumentada com `prometheus_client`:
+A API é instrumentada com `prometheus_client`:
 
-- `medtriage_http_requests_total`: contador de requisicoes por metodo, endpoint e status HTTP.
-- `medtriage_http_request_latency_seconds`: histograma de latencia por metodo e endpoint.
-- `GET /metrics`: expõe as metricas no formato Prometheus.
+- `medtriage_http_requests_total`: contador de requisições por metodo, endpoint e status HTTP.
+- `medtriage_http_request_latency_seconds`: histograma de latência por método e endpoint.
+- `GET /metrics`: expõe as métricas no formato Prometheus.
 
-O stack local sobe API + Prometheus + Grafana via Docker Compose:
+O comando abaixo constroi as imagens da API e do Airflow e sobe todo o stack
+local: API, Prometheus, Grafana, PostgreSQL e servicos Airflow.
 
 ```bash
 docker compose up --build
@@ -194,15 +196,16 @@ Servicos expostos:
 - API: http://127.0.0.1:8000
 - Prometheus: http://127.0.0.1:9090
 - Grafana: http://127.0.0.1:3000 (usuario `admin`, senha `admin`)
+- Airflow: http://127.0.0.1:8080 (usuario `admin`, senha `admin`)
 
-O dashboard `MedTriage - API Overview` e provisionado automaticamente em
-`monitoring/grafana/dashboards/medtriage_overview.json` e contem:
-- total de requisicoes
-- latencia media e p95
+O dashboard `MedTriage - API Overview` é provisionado automaticamente em
+`monitoring/grafana/dashboards/medtriage_overview.json` e contém:
+- total de requisições
+- latência média e p95
 - taxa de erro (%)
-- requisicoes por endpoint
+- requisições por endpoint
 
-Para gerar trafego de teste, use o benchmark da secao 6 apontando para
+Para gerar trafego de teste, use o benchmark da seção 6 apontando para
 `http://127.0.0.1:8000`.
 
 Para derrubar todo o stack:
@@ -211,24 +214,24 @@ Para derrubar todo o stack:
 docker compose down
 ```
 
-## 8) Otimizacao com ONNX Runtime
+## 8) Otimização com ONNX Runtime
 
-O pipeline `TF-IDF + LogisticRegression` e exportado para ONNX e executado com
+O pipeline `TF-IDF + LogisticRegression` é exportado para ONNX e executado com
 ONNX Runtime em CPU. O comando abaixo mede `avg`, `p50` e `p95` apos warm-up e
 grava o comparativo em `models/model_latency_comparison.csv`. Se o CSV informado
 tiver a coluna `urgency`, o comando tambem registra a acuracia de cada backend:
 
-O exportador preserva a normalizacao de acentos do modelo Joblib antes de envia-la
+O exportador preserva a normalização de acentos do modelo Joblib antes de enviá-la
 ao ONNX, pois `skl2onnx` nao converte `strip_accents="unicode"` diretamente.
 
-O arquivo `data/raw/test.dat` e um conjunto de inferencia sem rotulos: ele
+O arquivo `data/raw/test.dat` é um conjunto de inferência sem rótulos: ele
 comeca diretamente com o texto, ao contrario de `train.dat`, que possui o
 codigo numerico da classe no inicio de cada linha. Por isso, a acuracia no
 comparativo e `n/a` para esse arquivo. O benchmark registra
-`prediction_agreement`, que mede a concordancia entre Joblib e ONNX e valida a
-equivalencia das predicoes sem inventar rotulos.
+`prediction_agreement`, que mede a concordância entre Joblib e ONNX e valida a
+equivalência das predições sem inventar rótulos.
 
-Para obter uma acuracia com ground truth, gere uma validacao estratificada a
+Para obter uma acurácia com ground truth, gere uma validação estratificada a
 partir do conjunto rotulado de treino:
 
 ```powershell

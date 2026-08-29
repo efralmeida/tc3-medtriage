@@ -10,7 +10,16 @@ import urllib.request
 
 
 def _post_predict(url: str, text: str) -> tuple[int, float]:
-    """Envia um POST e retorna status code e latencia em ms."""
+    """Chama ``POST /predict`` e mede a latencia total percebida pelo cliente.
+
+    Args:
+        url: URL base da API, sem a necessidade de informar ``/predict``.
+        text: Texto do laudo enviado para classificação.
+
+    Returns:
+        Tupla com o código HTTP da resposta e a latencia total em milissegundos.
+    """
+    # A API espera um corpo JSON com a chave "text" codificado em UTF-8.
     payload = json.dumps({"text": text}).encode("utf-8")
     request = urllib.request.Request(
         url=f"{url.rstrip('/')}/predict",
@@ -19,6 +28,7 @@ def _post_predict(url: str, text: str) -> tuple[int, float]:
         method="POST",
     )
 
+    # Mede também serialização, rede e leitura da resposta, não apenas a inferência.
     start = time.perf_counter()
     with urllib.request.urlopen(request) as response:  # nosec: B310
         _ = response.read()
@@ -28,7 +38,10 @@ def _post_predict(url: str, text: str) -> tuple[int, float]:
 
 
 def main() -> None:
-    """Executa benchmark de n requisicoes e imprime p50/p95/media."""
+    """Executa requisições sequenciais e imprime estatísticas de latência.
+
+    Os tempos coletados são do ponto de vista do cliente que executa o script.
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("--url", default="http://127.0.0.1:8000")
     parser.add_argument("--requests", type=int, default=50)
@@ -40,6 +53,7 @@ def main() -> None:
 
     latencies = []
     errors = 0
+    # Cada iteração produz uma amostra independente de latência para a mesma entrada.
     for _ in range(args.requests):
         status_code, latency_ms = _post_predict(url=args.url, text=args.text)
         if status_code != 200:
@@ -47,6 +61,7 @@ def main() -> None:
         latencies.append(latency_ms)
 
     p50 = statistics.median(latencies)
+    # Com menos de 20 amostras, usa o pior tempo para evitar percentil instavel.
     p95 = statistics.quantiles(latencies, n=100)[94] if len(latencies) >= 20 else max(latencies)
     avg = statistics.mean(latencies)
 

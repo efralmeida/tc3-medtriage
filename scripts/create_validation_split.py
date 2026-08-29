@@ -1,4 +1,10 @@
-"""Cria conjuntos reproduziveis de treino e validacao a partir do train.csv."""
+"""Separa treino e validação para avaliar o modelo em dados não vistos.
+
+O dataset original possui os rótulos de urgência. Avaliar no mesmo conjunto
+usado no treinamento produziria uma medida otimista demais. Este script cria
+dois CSVs com uma divisão estratificada e reproduzível, permitindo medir a
+qualidade do modelo com ground truth antes do benchmark Joblib versus ONNX.
+"""
 
 from __future__ import annotations
 
@@ -18,28 +24,45 @@ def create_split(
     validation_size: float,
     random_state: int,
 ) -> None:
-    """Divide o dataset estratificando pela classe de urgencia."""
+    """Divide o dataset rotulado em treino e validação estratificados.
+
+    Args:
+        source_path: CSV rotulado de origem, com as colunas ``text`` e
+            ``urgency``.
+        train_path: Destino do subconjunto usado para treinar o modelo.
+        validation_path: Destino do subconjunto reservado para a avaliação.
+        validation_size: Fração do dataset destinada à validação.
+        random_state: Semente que torna a mesma divisão repetível.
+
+    Raises:
+        ValueError: Se o CSV de origem não tiver as colunas obrigatórias.
+    """
     data = pd.read_csv(source_path)
+    # A avaliação exige o texto de entrada e o rótulo real de cada exemplo.
     missing_columns = REQUIRED_COLUMNS - set(data.columns)
     if missing_columns:
         raise ValueError(f"Colunas ausentes: {sorted(missing_columns)}")
 
+    # Estratificar preserva a proporção de normal, atenção e urgente nos dois
+    # arquivos, evitando que classes menos frequentes desapareçam da validação.
     train_data, validation_data = train_test_split(
         data,
         test_size=validation_size,
         random_state=random_state,
         stratify=data["urgency"],
     )
+    # Cria o diretório de saída também quando o comando é executado do zero.
     train_path.parent.mkdir(parents=True, exist_ok=True)
     train_data.to_csv(train_path, index=False)
     validation_data.to_csv(validation_path, index=False)
+    # A distribuição permite conferir rapidamente se a estratificação ocorreu.
     print(f"train_rows={len(train_data)}")
     print(f"validation_rows={len(validation_data)}")
     print(f"validation_distribution={validation_data['urgency'].value_counts().to_dict()}")
 
 
 def main() -> None:
-    """Processa argumentos e cria os arquivos de treino e validacao."""
+    """Lê argumentos da linha de comando e gera os CSVs de treino e validação."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--source", type=Path, default=Path("data/processed/train.csv"))
     parser.add_argument(
@@ -55,6 +78,7 @@ def main() -> None:
     parser.add_argument("--validation-size", type=float, default=0.2)
     parser.add_argument("--random-state", type=int, default=42)
     args = parser.parse_args()
+    # ``train_test_split`` exige uma proporção estritamente entre zero e um.
     if not 0 < args.validation_size < 1:
         parser.error("--validation-size deve estar entre 0 e 1")
     create_split(
