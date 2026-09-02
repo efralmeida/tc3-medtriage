@@ -1,4 +1,4 @@
-FROM python:3.12-slim AS runtime
+FROM python:3.12-slim AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
@@ -6,11 +6,9 @@ ENV PIP_NO_CACHE_DIR=1
 
 WORKDIR /app
 
-COPY src ./src
-COPY models ./models
-
-RUN pip install --upgrade pip
-RUN pip install \
+RUN python -m venv /opt/venv \
+	&& /opt/venv/bin/pip install --upgrade pip \
+	&& /opt/venv/bin/pip install \
 	fastapi \
 	"uvicorn[standard]" \
 	scikit-learn \
@@ -22,6 +20,18 @@ RUN pip install \
 	onnx \
 	onnxruntime \
 	skl2onnx
+
+FROM python:3.12-slim AS runtime
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV PATH=/opt/venv/bin:$PATH
+
+WORKDIR /app
+
+COPY --from=builder /opt/venv /opt/venv
+COPY src ./src
+COPY models ./models
 
 ENV PYTHONPATH=/app/src
 

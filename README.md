@@ -219,15 +219,15 @@ docker compose down
 O pipeline `TF-IDF + LogisticRegression` é exportado para ONNX e executado com
 ONNX Runtime em CPU. O comando abaixo mede `avg`, `p50` e `p95` apos warm-up e
 grava o comparativo em `models/model_latency_comparison.csv`. Se o CSV informado
-tiver a coluna `urgency`, o comando tambem registra a acuracia de cada backend:
+tiver a coluna `urgency`, o comando também registra a acurácia de cada backend:
 
 O exportador preserva a normalização de acentos do modelo Joblib antes de enviá-la
-ao ONNX, pois `skl2onnx` nao converte `strip_accents="unicode"` diretamente.
+ao ONNX, pois `skl2onnx` não converte `strip_accents="unicode"` diretamente.
 
 O arquivo `data/raw/test.dat` é um conjunto de inferência sem rótulos: ele
-comeca diretamente com o texto, ao contrario de `train.dat`, que possui o
-codigo numerico da classe no inicio de cada linha. Por isso, a acuracia no
-comparativo e `n/a` para esse arquivo. O benchmark registra
+começa diretamente com o texto, ao contrario de `train.dat`, que possui o
+codigo numerico da classe no inicio de cada linha. Por isso, a acurácia no
+comparativo é `n/a` para esse arquivo. O benchmark registra
 `prediction_agreement`, que mede a concordância entre Joblib e ONNX e valida a
 equivalência das predições sem inventar rótulos.
 
@@ -260,8 +260,8 @@ PYTHONPATH=src poetry run python scripts/optimize_model.py --iterations 200
 
 Arquivos gerados:
 - `models/text_classifier_best.onnx`: artefato otimizado.
-- `models/model_latency_comparison.csv`: acuracia, concordancia entre backends e
-	latencias do Joblib e ONNX Runtime.
+- `models/model_latency_comparison.csv`: acurácia, concordância entre backends e
+	latências do Joblib e ONNX Runtime.
 
 Para executar a API com o modelo otimizado fora do Compose:
 
@@ -271,21 +271,21 @@ poetry run uvicorn medtriage.main:app --host 0.0.0.0 --port 8000
 ```
 
 O Compose ja aponta para `text_classifier_best.onnx`; gere o artefato antes de
-executar `docker compose up --build`. O fallback Joblib continua disponivel
+executar `docker compose up --build`. O fallback Joblib continua disponível
 quando `MODEL_PATH` aponta para `text_classifier_best.joblib`.
 
-O servico da API possui um healthcheck no Compose que executa uma requisicao
-real em `/predict`. Assim, Prometheus so inicia depois que o modelo ONNX foi
-carregado e respondeu com sucesso a uma inferencia.
+O servico da API possui um healthcheck no Compose que executa uma requisição
+real em `/predict`. Assim, Prometheus só inicia depois que o modelo ONNX foi
+carregado e respondeu com sucesso a uma inferência.
 
 ## 9) Entregáveis
 
 - API em Docker funcional
-- decisao arquitetural registrada neste README
-- procedimento de benchmark baseline de latencia documentado
+- decisão arquitetural registrada neste README
+- procedimento de benchmark baseline de latência documentado
 - workflow CI com lint e testes automatizados
-- DAG Airflow com ingestao, treinamento e salvamento do modelo
-- instrumentacao Prometheus na API e stack Docker Compose (API + Prometheus + Grafana)
-- dashboard Grafana com >= 3 paineis provisionado automaticamente
-- modelo ONNX Runtime, validacao de equivalencia e comparativo de latencia
+- DAG Airflow com ingestão, treinamento e salvamento do modelo
+- instrumentação Prometheus na API e stack Docker Compose (API + Prometheus + Grafana)
+- dashboard Grafana com >= 3 painéis provisionado automaticamente
+- modelo ONNX Runtime, validação de equivalência e comparativo de latência
 
