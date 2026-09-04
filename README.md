@@ -1,25 +1,19 @@
 # tc3-medtriage
 
-API de triagem automatica de laudos medicos para classificar urgência em 3 classes:
+API de triagem automática de laudos médicos para classificar urgência em 3 classes:
 - normal
 - atenção
 - urgente
-
-Este repositório atende a Etapa 1 do Tech Challenge (FIAP ML Engineering):
-- decisao arquitetural documentada
-- API FastAPI funcional para inferencia
-- empacotamento em Docker
-- medicao de latencia baseline
 
 ## 1) Decisão Arquitetural (Nuvem + Batch vs Real-Time)
 
 ### Provedor escolhido
 AWS.
 
-### Estrategia de deploy
-- API de inferencia em tempo real com FastAPI (deploy em ECS Fargate ou EKS).
+### Estratégia de deploy
+- API de inferência em tempo real com FastAPI (deploy em ECS Fargate ou EKS).
 - Artefato do modelo armazenado em objeto versionado (S3).
-- Pipeline de treino separado da inferencia (Airflow).
+- Pipeline de treino separado da inferência (Airflow).
 
 ### Justificativa Batch vs Real-Time
 Escolha principal: real-time.
@@ -30,7 +24,7 @@ Motivos de negócio:
 - reduz fila manual de priorização
 
 Motivos técnicos:
-- modelo linear com TF-IDF tem inferencia rapida
+- modelo linear com TF-IDF tem inferencia rápida
 - API stateless simplifica escalabilidade horizontal
 
 Onde batch entra no desenho:
