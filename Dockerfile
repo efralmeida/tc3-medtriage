@@ -26,8 +26,17 @@ FROM python:3.12-slim AS runtime
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PATH=/opt/venv/bin:$PATH
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
 
 WORKDIR /app
+
+# ONNX Runtime's StringNormalizer op requires the en_US.UTF-8 locale to be available.
+RUN apt-get update \
+	&& apt-get install -y --no-install-recommends locales \
+	&& sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen \
+	&& locale-gen en_US.UTF-8 \
+	&& rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /opt/venv /opt/venv
 COPY src ./src
